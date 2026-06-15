@@ -727,17 +727,6 @@ export default function QuorumSDR() {
           }}>
             {isOperator ? "⚙  Operator View" : "Decision Snapshot"}
           </span>
-          <button
-            onClick={() => setIsOperator(p => !p)}
-            title={isOperator ? "Switch to prospect view" : "Operator view (Ctrl+Shift+Q)"}
-            style={{
-              background: "none", border: `1px solid ${C.borderBright}`,
-              borderRadius: 5, padding: "2px 7px", cursor: "pointer",
-              fontSize: 9, color: C.textDim, letterSpacing: "0.06em", transition: "all 0.2s",
-            }}
-            onMouseOver={e => { e.currentTarget.style.borderColor = isOperator ? C.warn : C.accent; e.currentTarget.style.color = isOperator ? C.warn : C.accent; }}
-            onMouseOut={e => { e.currentTarget.style.borderColor = C.borderBright; e.currentTarget.style.color = C.textDim; }}
-          >{isOperator ? "USER" : "OP"}</button>
         </div>
 
         {isOperator
