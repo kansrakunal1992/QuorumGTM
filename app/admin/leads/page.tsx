@@ -18,6 +18,10 @@ interface Lead {
   qualified_at: string;
   session_booked: boolean;
   notes: string | null;
+  prospect_name: string | null;
+  prospect_email: string | null;
+  preferred_time: string | null;
+  booking_requested_at: string | null;
 }
 
 const C = {
@@ -257,6 +261,15 @@ export default function AdminLeadsPage() {
 
                       {/* Right: recommended move + notes + book button */}
                       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        {(lead.prospect_name || lead.prospect_email) && (
+                          <div style={{ padding: "12px", background: "#0a0b14", borderRadius: 8, border: `1px solid ${C.success}22` }}>
+                            <div style={{ fontSize: 9, color: C.success, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 700 }}>✓ Booking Received</div>
+                            {lead.prospect_name  && <div style={{ fontSize: 12, color: C.text,    marginBottom: 4  }}>Name:  {lead.prospect_name}</div>}
+                            {lead.prospect_email && <div style={{ fontSize: 12, color: C.text,    marginBottom: 4  }}>Email: <a href={`mailto:${lead.prospect_email}`} style={{ color: C.accent, textDecoration: "none" }}>{lead.prospect_email}</a></div>}
+                            {lead.preferred_time && <div style={{ fontSize: 12, color: C.textMuted }}> Preferred time: {lead.preferred_time}</div>}
+                          </div>
+                        )}
+
                         {lead.recommended_next_message && (
                           <div style={{ padding: "12px", background: "#0a0b14", borderRadius: 8, border: `1px solid ${C.border}` }}>
                             <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Recommended Next Move</div>

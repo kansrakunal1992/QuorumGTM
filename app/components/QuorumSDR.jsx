@@ -97,6 +97,14 @@ BOOKING HANDOFF: Summarize the decision, stakes, key tension, and why Quorum wil
 
 RULES: Never oversell. Never claim certainty. Never argue. Never pitch features first. Be concise. Sound like a thoughtful advisor. Optimize for booked sessions, not conversation length.
 
+EXCHANGE LIMIT — STRICTLY ENFORCED:
+You have a maximum of 4 question-answer exchanges with the prospect. Plan accordingly:
+- Exchange 1: Open with a sharp discovery question
+- Exchange 2: One focused qualification follow-up
+- Exchange 3: Deliver your insight observation about the decision
+- Exchange 4: Extend the session invitation — this is your final message
+Never ask more than one question per exchange. Never exceed 4 exchanges. If you reach exchange 4, extend the invitation regardless of how much information remains ungathered.
+
 CRITICAL OUTPUT FORMAT — append this block at the end of EVERY response:
 
 ===INTERNAL===
@@ -401,6 +409,215 @@ function IntelPanel({ intel, C }) {
   );
 }
 
+
+// ─── Booking card — calendar + time picker ───────────────────────────────────
+function BookingCard({ sessionId, C, onComplete }) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  const [name,         setName]         = useState("");
+  const [email,        setEmail]        = useState("");
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [viewDate,     setViewDate]     = useState(new Date());
+  const [busy,         setBusy]         = useState(false);
+  const [done,         setDone]         = useState(false);
+  const [error,        setError]        = useState("");
+
+  const DAYS   = ["Su","Mo","Tu","We","Th","Fr","Sa"];
+  const MONTHS = ["January","February","March","April","May","June",
+                  "July","August","September","October","November","December"];
+  const SLOTS  = ["9:00 AM","10:00 AM","11:00 AM","12:00 PM",
+                  "2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM"];
+
+  const yr  = viewDate.getFullYear();
+  const mo  = viewDate.getMonth();
+  const firstDay    = new Date(yr, mo, 1).getDay();
+  const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+
+  const isPast     = (d) => new Date(yr, mo, d) < today;
+  const isToday    = (d) => new Date(yr, mo, d).getTime() === today.getTime();
+  const isSelected = (d) => selectedDate &&
+    selectedDate.getDate() === d && selectedDate.getMonth() === mo && selectedDate.getFullYear() === yr;
+
+  const canGoPrev = () => {
+    const prev = new Date(yr, mo - 1, 1);
+    const now  = new Date(); now.setDate(1); now.setHours(0,0,0,0);
+    return prev >= now;
+  };
+
+  const selectDay = (d) => {
+    if (isPast(d)) return;
+    setSelectedDate(new Date(yr, mo, d));
+    setSelectedTime(null);
+  };
+
+  const formatFinal = () =>
+    selectedDate && selectedTime
+      ? `${MONTHS[selectedDate.getMonth()]} ${selectedDate.getDate()}, ${selectedDate.getFullYear()} at ${selectedTime}`
+      : null;
+
+  const valid = name.trim() && email.trim() && email.includes("@") && selectedDate && selectedTime;
+
+  const handleBook = async () => {
+    if (!valid || busy) return;
+    setBusy(true); setError("");
+    try {
+      const res = await fetch("/api/leads/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id:    sessionId,
+          prospect_name: name.trim(),
+          prospect_email: email.trim(),
+          preferred_time: formatFinal(),
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      setDone(true); onComplete?.();
+    } catch {
+      setError("Something went wrong — please try again.");
+      setBusy(false);
+    }
+  };
+
+  const inp = {
+    width: "100%", background: C.bg, border: `1px solid ${C.borderBright}`,
+    borderRadius: 8, padding: "9px 13px", color: C.text, fontSize: 13,
+    outline: "none", fontFamily: "inherit", transition: "border-color 0.2s",
+  };
+
+  // ── Confirmation screen ──
+  if (done) {
+    return (
+      <div style={{
+        margin: "8px 0 8px 36px", background: C.successGlow,
+        border: `1px solid ${C.success}`, borderRadius: 14, padding: "20px 22px",
+        animation: "glow 2.5s ease-in-out infinite",
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: C.success, marginBottom: 8 }}>✓ Session confirmed</div>
+        <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.65 }}>
+          You will receive a calendar invite at <strong style={{ color: C.text }}>{email}</strong> shortly.
+          Quorum will arrive prepared with a structured brief on your decision.
+        </div>
+        <div style={{ marginTop: 12, fontSize: 12, color: C.success, fontWeight: 600 }}>
+          {formatFinal()}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Booking form ──
+  return (
+    <div style={{
+      margin: "8px 0 8px 36px", background: C.card,
+      border: `1px solid ${C.accent}`, borderRadius: 14, padding: "20px 22px",
+      boxShadow: `0 0 24px ${C.accentGlow}`,
+    }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 3 }}>Book your Quorum session</div>
+      <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 18, lineHeight: 1.5 }}>
+        45 minutes. We arrive prepared with a structured brief on your decision.
+      </div>
+
+      {/* Name + Email */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+        <input type="text"  placeholder="Your name *"  value={name}  onChange={e => setName(e.target.value)}
+          style={inp} onFocus={e => e.target.style.borderColor = C.accent} onBlur={e => e.target.style.borderColor = C.borderBright} />
+        <input type="email" placeholder="Your email *" value={email} onChange={e => setEmail(e.target.value)}
+          style={inp} onFocus={e => e.target.style.borderColor = C.accent} onBlur={e => e.target.style.borderColor = C.borderBright} />
+      </div>
+
+      {/* Calendar */}
+      <div style={{ background: C.bg, borderRadius: 10, padding: "14px", border: `1px solid ${C.border}`, marginBottom: 14 }}>
+        {/* Month nav */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <button onClick={() => canGoPrev() && setViewDate(new Date(yr, mo - 1, 1))}
+            style={{ background: "none", border: "none", cursor: canGoPrev() ? "pointer" : "default",
+              color: canGoPrev() ? C.textMuted : C.textDim, fontSize: 16, padding: "0 4px", lineHeight: 1 }}>‹</button>
+          <span style={{ fontSize: 12, fontWeight: 700, color: C.text, letterSpacing: "0.04em" }}>
+            {MONTHS[mo]} {yr}
+          </span>
+          <button onClick={() => setViewDate(new Date(yr, mo + 1, 1))}
+            style={{ background: "none", border: "none", cursor: "pointer",
+              color: C.textMuted, fontSize: 16, padding: "0 4px", lineHeight: 1 }}>›</button>
+        </div>
+
+        {/* Day headers */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", marginBottom: 6 }}>
+          {DAYS.map(d => (
+            <div key={d} style={{ textAlign: "center", fontSize: 9, fontWeight: 700,
+              color: C.textDim, letterSpacing: "0.06em", paddingBottom: 4 }}>{d}</div>
+          ))}
+        </div>
+
+        {/* Day cells */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+          {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const d   = i + 1;
+            const sel = isSelected(d);
+            const tod = isToday(d);
+            const pas = isPast(d);
+            return (
+              <div key={d} onClick={() => selectDay(d)} style={{
+                width: 30, height: 30, borderRadius: "50%", margin: "0 auto",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: sel ? 700 : 400, cursor: pas ? "default" : "pointer",
+                background: sel ? `linear-gradient(135deg,#5c55f0,#9b6cf7)` : tod ? C.accentGlow : "transparent",
+                color: sel ? "white" : pas ? C.textDim : tod ? C.accent : C.text,
+                border: tod && !sel ? `1px solid ${C.accent}` : "1px solid transparent",
+                transition: "all 0.15s",
+                opacity: pas ? 0.35 : 1,
+              }}>{d}</div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Time slots — appear after date selected */}
+      {selectedDate && (
+        <div style={{ background: C.bg, borderRadius: 10, padding: "14px", border: `1px solid ${C.border}`, marginBottom: 14 }}>
+          <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em",
+            marginBottom: 10, fontWeight: 700 }}>
+            Select time — {MONTHS[selectedDate.getMonth()]} {selectedDate.getDate()}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
+            {SLOTS.map(slot => {
+              const active = selectedTime === slot;
+              return (
+                <button key={slot} onClick={() => setSelectedTime(slot)} style={{
+                  padding: "8px 4px", borderRadius: 8, border: `1px solid ${active ? C.accent : C.borderBright}`,
+                  background: active ? `linear-gradient(135deg,#5c55f0,#9b6cf7)` : C.card,
+                  color: active ? "white" : C.textMuted, fontSize: 11, fontWeight: active ? 700 : 400,
+                  cursor: "pointer", letterSpacing: "0.02em", transition: "all 0.15s",
+                  boxShadow: active ? "0 2px 10px rgba(92,85,240,0.35)" : "none",
+                }}>{slot}</button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Selected summary */}
+      {selectedDate && selectedTime && (
+        <div style={{ fontSize: 11, color: C.accent, fontWeight: 600, marginBottom: 10, textAlign: "center" }}>
+          {MONTHS[selectedDate.getMonth()]} {selectedDate.getDate()}, {yr} · {selectedTime}
+        </div>
+      )}
+
+      {error && <div style={{ fontSize: 11, color: C.danger, marginBottom: 10 }}>{error}</div>}
+
+      <button onClick={handleBook} disabled={!valid || busy} style={{
+        width: "100%", padding: "11px", borderRadius: 9, border: "none",
+        cursor: valid && !busy ? "pointer" : "default",
+        background: valid && !busy ? "linear-gradient(135deg,#5c55f0,#9b6cf7)" : C.border,
+        color: valid && !busy ? "white" : C.textDim, fontSize: 13, fontWeight: 700,
+        letterSpacing: "0.02em", transition: "all 0.2s",
+        boxShadow: valid && !busy ? "0 4px 14px rgba(92,85,240,0.35)" : "none",
+      }}>{busy ? "Confirming…" : "Confirm session →"}</button>
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function QuorumSDR() {
   const [isDark,    setIsDark]    = useState(true);
@@ -412,7 +629,10 @@ export default function QuorumSDR() {
   const [intel,     setIntel]     = useState(null);
   const [history,   setHistory]   = useState([]);
   const [started,   setStarted]   = useState(false);
-  const [qualified, setQualified] = useState(false);
+  const [qualified,    setQualified]    = useState(false);
+  const [userExchanges, setUserExchanges] = useState(0);   // counts prospect messages (not the Hello)
+  const [showBooking,   setShowBooking]   = useState(false);
+  const [bookingDone,   setBookingDone]   = useState(false);
 
   // ── Session tracking (lead write) ──────────────────────────────────────────
   const sessionId      = useRef(genSessionId());
@@ -470,14 +690,21 @@ export default function QuorumSDR() {
   };
 
   // ── API call ───────────────────────────────────────────────────────────────
-  const callAPI = async (msgs) => {
+  const callAPI = async (msgs, exchangeCount = 0) => {
+    // Inject hard nudge on exchanges 3 and 4
+    let systemContent = SYSTEM_PROMPT;
+    if (exchangeCount === 3) {
+      systemContent += "\n\nURGENT: This is exchange 3 of 4 maximum. You MUST deliver your insight observation now and transition toward the session invitation in this message.";
+    } else if (exchangeCount >= 4) {
+      systemContent += "\n\nURGENT: This is the FINAL exchange (4 of 4). You MUST extend the session invitation right now. Do not ask any further questions. Close with the invite.";
+    }
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "deepseek-v4-pro",
         max_tokens: 1000,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, ...msgs],
+        messages: [{ role: "system", content: systemContent }, ...msgs],
       }),
     });
     const data = await res.json();
@@ -492,6 +719,9 @@ export default function QuorumSDR() {
       if (parsed.QUALIFIED === "YES" && !hasWrittenLead.current) {
         setQualified(true);
         writeLead(parsed, fullHistory);
+      }
+      if (parsed.STAGE === "Invite" || parsed.STAGE === "Booked") {
+        setShowBooking(true);
       }
     }
     return visible;
@@ -517,11 +747,13 @@ export default function QuorumSDR() {
     if (!text || loading) return;
     setInput("");
     textareaRef.current.style.height = "auto";
+    const nextExchanges = userExchanges + 1;
+    setUserExchanges(nextExchanges);
     setMessages(p => [...p, { role: "user", text }]);
     setLoading(true);
     const newHistory = [...history, { role: "user", content: text }];
     try {
-      const raw      = await callAPI(newHistory);
+      const raw      = await callAPI(newHistory, nextExchanges);
       const fullHist = [...newHistory, { role: "assistant", content: raw }];
       const visible  = processResponse(raw, fullHist);
       setHistory(fullHist);
@@ -632,27 +864,36 @@ export default function QuorumSDR() {
               >Begin Session</button>
             </div>
           ) : (
-            messages.map((m, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-                {m.role === "assistant" && (
+            <>
+              {messages.map((m, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                  {m.role === "assistant" && (
+                    <div style={{
+                      width: 26, height: 26, borderRadius: 7, flexShrink: 0, marginRight: 10, marginTop: 2,
+                      background: "linear-gradient(135deg,#5c55f0,#9b6cf7)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 10, fontWeight: 800, color: "white",
+                    }}>Q</div>
+                  )}
                   <div style={{
-                    width: 26, height: 26, borderRadius: 7, flexShrink: 0, marginRight: 10, marginTop: 2,
-                    background: "linear-gradient(135deg,#5c55f0,#9b6cf7)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 10, fontWeight: 800, color: "white",
-                  }}>Q</div>
-                )}
-                <div style={{
-                  maxWidth: "76%", padding: "13px 17px",
-                  borderRadius: m.role === "user" ? "16px 16px 5px 16px" : "5px 16px 16px 16px",
-                  background: m.role === "user" ? C.userBubble : C.card,
-                  border: m.role === "assistant" ? `1px solid ${C.border}` : "none",
-                  fontSize: 13.5, lineHeight: 1.75,
-                  color: m.role === "user" ? "rgba(255,255,255,0.95)" : C.text,
-                  whiteSpace: "pre-wrap", boxShadow: C.shadow,
-                }}>{m.text}</div>
-              </div>
-            ))
+                    maxWidth: "76%", padding: "13px 17px",
+                    borderRadius: m.role === "user" ? "16px 16px 5px 16px" : "5px 16px 16px 16px",
+                    background: m.role === "user" ? C.userBubble : C.card,
+                    border: m.role === "assistant" ? `1px solid ${C.border}` : "none",
+                    fontSize: 13.5, lineHeight: 1.75,
+                    color: m.role === "user" ? "rgba(255,255,255,0.95)" : C.text,
+                    whiteSpace: "pre-wrap", boxShadow: C.shadow,
+                  }}>{m.text}</div>
+                </div>
+              ))}
+              {showBooking && !loading && (
+                <BookingCard
+                  sessionId={sessionId.current}
+                  C={C}
+                  onComplete={() => setBookingDone(true)}
+                />
+              )}
+            </>
           )}
 
           {loading && (
@@ -671,8 +912,8 @@ export default function QuorumSDR() {
           <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
-        {started && (
+        {/* Input — hidden once booking card appears */}
+        {started && !showBooking && (
           <div style={{ padding: "16px 24px", borderTop: `1px solid ${C.border}`, background: C.panel, display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0, boxShadow: C.shadow }}>
             <textarea
               ref={textareaRef}
