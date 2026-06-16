@@ -24,12 +24,22 @@ interface Lead {
   booking_requested_at: string | null;
 }
 
-const C = {
+const DARK_THEME = {
   bg: "#07080f", panel: "#0c0d18", card: "#111220",
   border: "#1c1d2e", borderBright: "#2a2b42",
   text: "#dde1f0", textMuted: "#5a5f7a", textDim: "#3a3f58",
   accent: "#6c63ff", success: "#22d3a0", successGlow: "rgba(34,211,160,0.12)",
   warn: "#f5a623", warnGlow: "rgba(245,166,35,0.10)", danger: "#f56060",
+  toggleBg: "#1c1d2e", inputBg: "#0a0b14",
+};
+
+const LIGHT_THEME = {
+  bg: "#f4f5fb", panel: "#ffffff", card: "#eef0f8",
+  border: "#e2e4f0", borderBright: "#cdd0e8",
+  text: "#18192e", textMuted: "#555a7a", textDim: "#9aa0c0",
+  accent: "#5c55f0", success: "#0d9e75", successGlow: "rgba(13,158,117,0.10)",
+  warn: "#c97706", warnGlow: "rgba(201,119,6,0.10)", danger: "#dc2626",
+  toggleBg: "#e8eaf5", inputBg: "#f0f1f8",
 };
 
 function fmtDate(iso: string) {
@@ -39,13 +49,13 @@ function fmtDate(iso: string) {
   });
 }
 
-function scoreColor(n: number | null) {
+function scoreColor(n: number | null, C: typeof DARK_THEME) {
   if (!n) return C.textDim;
   return n >= 7 ? C.success : n >= 4 ? C.warn : C.danger;
 }
 
-function ScorePill({ label, value }: { label: string; value: number | null }) {
-  const color = scoreColor(value);
+function ScorePill({ label, value, C }: { label: string; value: number | null; C: typeof DARK_THEME }) {
+  const color = scoreColor(value, C);
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ fontSize: 9, color: C.textDim, marginBottom: 3, letterSpacing: "0.06em" }}>{label}</div>
@@ -60,7 +70,7 @@ function ScorePill({ label, value }: { label: string; value: number | null }) {
   );
 }
 
-function StakesBadge({ value }: { value: string | null }) {
+function StakesBadge({ value, C }: { value: string | null; C: typeof DARK_THEME }) {
   const map: Record<string, { color: string; bg: string }> = {
     Low:      { color: C.textMuted, bg: C.border },
     Medium:   { color: C.warn,      bg: C.warnGlow },
@@ -76,7 +86,7 @@ function StakesBadge({ value }: { value: string | null }) {
   );
 }
 
-function StatCard({ label, value, color = C.text }: { label: string; value: string | number; color?: string }) {
+function StatCard({ label, value, color, C }: { label: string; value: string | number; color?: string; C: typeof DARK_THEME }) {
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 20px", flex: 1 }}>
       <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>{label}</div>
@@ -86,6 +96,9 @@ function StatCard({ label, value, color = C.text }: { label: string; value: stri
 }
 
 export default function AdminLeadsPage() {
+  const [isDark,    setIsDark]    = useState(false);
+  const C = isDark ? DARK_THEME : LIGHT_THEME;
+
   const [leads,     setLeads]     = useState<Lead[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [expanded,  setExpanded]  = useState<string | null>(null);
@@ -135,7 +148,7 @@ export default function AdminLeadsPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Inter',-apple-system,sans-serif", color: C.text }}>
+    <div style={{ minHeight: "100vh", background: C.bg, fontFamily: "'Inter',-apple-system,sans-serif", color: C.text, transition: "background 0.3s, color 0.3s" }}>
       {/* Header */}
       <div style={{ padding: "16px 32px", borderBottom: `1px solid ${C.border}`, background: C.panel, display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{
@@ -150,6 +163,22 @@ export default function AdminLeadsPage() {
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
           <a href="/" style={{ fontSize: 11, color: C.textMuted, textDecoration: "none" }}>← Back to SDR</a>
+          <button
+            onClick={() => setIsDark(p => !p)}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            style={{
+              width: 34, height: 20, borderRadius: 10, border: "none",
+              cursor: "pointer", background: C.toggleBg,
+              position: "relative", transition: "background 0.3s", flexShrink: 0,
+            }}
+          >
+            <div style={{
+              width: 14, height: 14, borderRadius: "50%", background: C.accent,
+              position: "absolute", top: 3,
+              left: isDark ? 3 : 17,
+              transition: "left 0.25s cubic-bezier(0.4,0,0.2,1)",
+            }} />
+          </button>
           <div style={{
             padding: "4px 12px", borderRadius: 20,
             background: C.warnGlow, border: `1px solid ${C.warn}`,
@@ -161,10 +190,10 @@ export default function AdminLeadsPage() {
       <div style={{ padding: "28px 32px", maxWidth: 1100, margin: "0 auto" }}>
         {/* Stats */}
         <div style={{ display: "flex", gap: 14, marginBottom: 28 }}>
-          <StatCard label="Total Qualified" value={leads.length}  color={C.accent}  />
-          <StatCard label="This Week"       value={thisWeek}      color={C.text}    />
-          <StatCard label="Avg Fit Score"   value={avgFit}        color={C.success} />
-          <StatCard label="Sessions Booked" value={booked}        color={C.warn}    />
+          <StatCard label="Total Qualified" value={leads.length}  color={C.accent}  C={C} />
+          <StatCard label="This Week"       value={thisWeek}      color={C.text}    C={C} />
+          <StatCard label="Avg Fit Score"   value={avgFit}        color={C.success} C={C} />
+          <StatCard label="Sessions Booked" value={booked}        color={C.warn}    C={C} />
         </div>
 
         {/* Table */}
@@ -208,11 +237,11 @@ export default function AdminLeadsPage() {
                     <div style={{ fontSize: 12, color: C.text, fontWeight: 500, lineHeight: 1.4, paddingRight: 12 }}>
                       {lead.decision_category || <span style={{ color: C.textDim }}>Not captured</span>}
                     </div>
-                    <div><StakesBadge value={lead.estimated_stakes} /></div>
+                    <div><StakesBadge value={lead.estimated_stakes} C={C} /></div>
                     <div style={{ display: "flex", gap: 10 }}>
-                      <ScorePill label="IMP" value={lead.importance_score} />
-                      <ScorePill label="CPX" value={lead.complexity_score} />
-                      <ScorePill label="FIT" value={lead.fit_score} />
+                      <ScorePill label="IMP" value={lead.importance_score} C={C} />
+                      <ScorePill label="CPX" value={lead.complexity_score} C={C} />
+                      <ScorePill label="FIT" value={lead.fit_score} C={C} />
                     </div>
                     <div style={{
                       fontSize: 10, fontWeight: 700,
@@ -252,7 +281,7 @@ export default function AdminLeadsPage() {
                         ) : <div style={{ fontSize: 12, color: C.textDim }}>Not captured</div>}
 
                         {lead.council_config && lead.council_config !== "TBD" && (
-                          <div style={{ marginTop: 16, padding: "12px", background: "#0a0b14", borderRadius: 8, border: `1px solid ${C.border}` }}>
+                          <div style={{ marginTop: 16, padding: "12px", background: C.inputBg, borderRadius: 8, border: `1px solid ${C.border}` }}>
                             <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Council Config</div>
                             <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.6 }}>{lead.council_config}</div>
                           </div>
@@ -262,7 +291,7 @@ export default function AdminLeadsPage() {
                       {/* Right: recommended move + notes + book button */}
                       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                         {(lead.prospect_name || lead.prospect_email) && (
-                          <div style={{ padding: "12px", background: "#0a0b14", borderRadius: 8, border: `1px solid ${C.success}22` }}>
+                          <div style={{ padding: "12px", background: C.inputBg, borderRadius: 8, border: `1px solid ${C.success}22` }}>
                             <div style={{ fontSize: 9, color: C.success, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8, fontWeight: 700 }}>✓ Booking Received</div>
                             {lead.prospect_name  && <div style={{ fontSize: 12, color: C.text,    marginBottom: 4  }}>Name:  {lead.prospect_name}</div>}
                             {lead.prospect_email && <div style={{ fontSize: 12, color: C.text,    marginBottom: 4  }}>Email: <a href={`mailto:${lead.prospect_email}`} style={{ color: C.accent, textDecoration: "none" }}>{lead.prospect_email}</a></div>}
@@ -271,7 +300,7 @@ export default function AdminLeadsPage() {
                         )}
 
                         {lead.recommended_next_message && (
-                          <div style={{ padding: "12px", background: "#0a0b14", borderRadius: 8, border: `1px solid ${C.border}` }}>
+                          <div style={{ padding: "12px", background: C.inputBg, borderRadius: 8, border: `1px solid ${C.border}` }}>
                             <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Recommended Next Move</div>
                             <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.6 }}>{lead.recommended_next_message}</div>
                           </div>
@@ -286,7 +315,7 @@ export default function AdminLeadsPage() {
                             rows={3}
                             onClick={e => e.stopPropagation()}
                             style={{
-                              width: "100%", background: "#0a0b14", border: `1px solid ${C.borderBright}`,
+                              width: "100%", background: C.inputBg, border: `1px solid ${C.borderBright}`,
                               borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 12,
                               lineHeight: 1.6, fontFamily: "inherit", resize: "vertical", outline: "none",
                             }}
@@ -328,7 +357,7 @@ export default function AdminLeadsPage() {
         * { box-sizing:border-box; margin:0; padding:0; }
         ::-webkit-scrollbar { width:3px; }
         ::-webkit-scrollbar-thumb { background:#2a2b42; border-radius:2px; }
-        textarea::placeholder { color:#3a3f58; }
+        textarea::placeholder { color: #9aa0c0; }
       `}</style>
     </div>
   );
