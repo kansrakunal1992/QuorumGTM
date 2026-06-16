@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      session_id, decision_category, estimated_stakes,
+      session_id, source, user_decision, decision_category, estimated_stakes,
       importance_score, complexity_score, fit_score,
       likelihood_of_booking, recommended_next_message,
       council_config, conversation_snapshot,
@@ -25,6 +25,8 @@ export async function POST(req: NextRequest) {
     const { error } = await supabase.from("leads").upsert(
       {
         session_id,
+        source:                   source                   || "direct",
+        user_decision:            user_decision            || null,
         decision_category:        decision_category        || null,
         estimated_stakes:         estimated_stakes         || null,
         importance_score:         importance_score         || null,

@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 interface Lead {
   id: string;
   session_id: string;
+  source: string | null;
+  user_decision: string | null;
   decision_category: string | null;
   estimated_stakes: string | null;
   importance_score: number | null;
@@ -86,6 +88,22 @@ function StakesBadge({ value, C }: { value: string | null; C: typeof DARK_THEME 
   );
 }
 
+function SourceBadge({ value, C }: { value: string | null; C: typeof DARK_THEME }) {
+  const map: Record<string, { color: string; bg: string; label: string }> = {
+    apollo_email: { color: "#7c8fff", bg: "rgba(124,143,255,0.12)", label: "Email"    },
+    website:      { color: C.success, bg: C.successGlow,            label: "Website"  },
+    linkedin:     { color: "#0a92d8", bg: "rgba(10,146,216,0.12)",   label: "LinkedIn" },
+    direct:       { color: C.textMuted, bg: C.border,                label: "Direct"   },
+  };
+  const s = map[value || "direct"] || map.direct;
+  return (
+    <span style={{
+      padding: "3px 9px", borderRadius: 20, fontSize: 9, fontWeight: 700,
+      background: s.bg, color: s.color, letterSpacing: "0.05em", whiteSpace: "nowrap",
+    }}>{s.label}</span>
+  );
+}
+
 function StatCard({ label, value, color, C }: { label: string; value: string | number; color?: string; C: typeof DARK_THEME }) {
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 20px", flex: 1 }}>
@@ -104,6 +122,7 @@ export default function AdminLeadsPage() {
   const [expanded,  setExpanded]  = useState<string | null>(null);
   const [saving,    setSaving]    = useState<string | null>(null);
   const [noteEdits, setNoteEdits] = useState<Record<string, string>>({});
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
 
   useEffect(() => {
     fetch("/api/admin/leads")
@@ -112,16 +131,23 @@ export default function AdminLeadsPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  const thisWeek = leads.filter(l => {
+  // Distinct sources present in the data, for the filter bar
+  const availableSources = Array.from(new Set(leads.map(l => l.source || "direct")));
+
+  const filteredLeads = sourceFilter === "all"
+    ? leads
+    : leads.filter(l => (l.source || "direct") === sourceFilter);
+
+  const thisWeek = filteredLeads.filter(l => {
     const diff = (Date.now() - new Date(l.qualified_at).getTime()) / 86400000;
     return diff <= 7;
   }).length;
 
-  const fittedLeads  = leads.filter(l => l.fit_score);
+  const fittedLeads  = filteredLeads.filter(l => l.fit_score);
   const avgFit = fittedLeads.length
     ? (fittedLeads.reduce((s, l) => s + (l.fit_score || 0), 0) / fittedLeads.length).toFixed(1)
     : "—";
-  const booked = leads.filter(l => l.session_booked).length;
+  const booked = filteredLeads.filter(l => l.session_booked).length;
 
   const markBooked = async (lead: Lead) => {
     setSaving(lead.session_id);
@@ -189,51 +215,74 @@ export default function AdminLeadsPage() {
 
       <div style={{ padding: "28px 32px", maxWidth: 1100, margin: "0 auto" }}>
         {/* Stats */}
-        <div style={{ display: "flex", gap: 14, marginBottom: 28 }}>
-          <StatCard label="Total Qualified" value={leads.length}  color={C.accent}  C={C} />
-          <StatCard label="This Week"       value={thisWeek}      color={C.text}    C={C} />
-          <StatCard label="Avg Fit Score"   value={avgFit}        color={C.success} C={C} />
-          <StatCard label="Sessions Booked" value={booked}        color={C.warn}    C={C} />
+        <div style={{ display: "flex", gap: 14, marginBottom: 20 }}>
+          <StatCard label="Total Qualified" value={filteredLeads.length} color={C.accent}  C={C} />
+          <StatCard label="This Week"       value={thisWeek}             color={C.text}    C={C} />
+          <StatCard label="Avg Fit Score"   value={avgFit}                color={C.success} C={C} />
+          <StatCard label="Sessions Booked" value={booked}                color={C.warn}    C={C} />
         </div>
+
+        {/* Source filter bar */}
+        {leads.length > 0 && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+            {["all", ...availableSources].map(s => {
+              const active = sourceFilter === s;
+              const labelMap: Record<string, string> = {
+                all: "All Sources", apollo_email: "Email", website: "Website",
+                linkedin: "LinkedIn", direct: "Direct",
+              };
+              return (
+                <button key={s} onClick={() => setSourceFilter(s)} style={{
+                  padding: "6px 14px", borderRadius: 20, fontSize: 11, fontWeight: 700,
+                  border: `1px solid ${active ? C.accent : C.borderBright}`,
+                  background: active ? C.accent : "transparent",
+                  color: active ? "white" : C.textMuted,
+                  cursor: "pointer", transition: "all 0.15s", letterSpacing: "0.02em",
+                }}>{labelMap[s] || s}</button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Table */}
         {loading ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: C.textDim }}>Loading leads…</div>
-        ) : leads.length === 0 ? (
+        ) : filteredLeads.length === 0 ? (
           <div style={{ textAlign: "center", padding: "80px 0", background: C.card, borderRadius: 12, border: `1px solid ${C.border}` }}>
             <div style={{ fontSize: 28, marginBottom: 12, opacity: 0.15 }}>◈</div>
-            <div style={{ color: C.textDim, fontSize: 13 }}>No qualified leads yet</div>
+            <div style={{ color: C.textDim, fontSize: 13 }}>{leads.length === 0 ? "No qualified leads yet" : "No leads from this source yet"}</div>
             <div style={{ color: C.textDim, fontSize: 11, marginTop: 4 }}>They will appear here as prospects qualify through the SDR</div>
           </div>
         ) : (
           <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${C.border}` }}>
             {/* Column headers */}
             <div style={{
-              display: "grid", gridTemplateColumns: "155px 1fr 100px 140px 100px 120px",
+              display: "grid", gridTemplateColumns: "140px 84px 1fr 90px 130px 90px 110px",
               background: "#0a0b16", padding: "10px 20px", borderBottom: `1px solid ${C.border}`,
             }}>
-              {["Date Qualified", "Decision", "Stakes", "Scores (I / C / F)", "Booking", "Status"].map(h => (
+              {["Date Qualified", "Source", "Decision", "Stakes", "Scores (I / C / F)", "Booking", "Status"].map(h => (
                 <div key={h} style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>{h}</div>
               ))}
             </div>
 
-            {leads.map((lead, i) => {
+            {filteredLeads.map((lead, i) => {
               const isExp    = expanded === lead.id;
               const isBooked = lead.session_booked;
               const rowBg    = isExp ? C.card : (i % 2 === 0 ? C.bg : "#0a0b14");
 
               return (
-                <div key={lead.id} style={{ borderBottom: i < leads.length - 1 ? `1px solid ${C.border}` : "none" }}>
+                <div key={lead.id} style={{ borderBottom: i < filteredLeads.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   {/* Row */}
                   <div
                     onClick={() => setExpanded(p => p === lead.id ? null : lead.id)}
                     style={{
-                      display: "grid", gridTemplateColumns: "155px 1fr 100px 140px 100px 120px",
+                      display: "grid", gridTemplateColumns: "140px 84px 1fr 90px 130px 90px 110px",
                       padding: "13px 20px", cursor: "pointer", background: rowBg,
                       alignItems: "center", transition: "background 0.2s",
                     }}
                   >
                     <div style={{ fontSize: 11, color: C.textMuted }}>{fmtDate(lead.qualified_at)}</div>
+                    <div><SourceBadge value={lead.source} C={C} /></div>
                     <div style={{ fontSize: 12, color: C.text, fontWeight: 500, lineHeight: 1.4, paddingRight: 12 }}>
                       {lead.decision_category || <span style={{ color: C.textDim }}>Not captured</span>}
                     </div>
@@ -262,8 +311,23 @@ export default function AdminLeadsPage() {
                       background: C.card, borderTop: `1px solid ${C.border}`,
                       padding: "20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24,
                     }}>
-                      {/* Left: conversation + council */}
+                      {/* Left: verbatim decision + conversation + council */}
                       <div>
+                        {lead.user_decision && (
+                          <div style={{
+                            marginBottom: 16, padding: "12px 14px",
+                            background: C.inputBg, borderRadius: 8,
+                            borderLeft: `3px solid ${C.accent}`,
+                          }}>
+                            <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>
+                              User&apos;s Decision — Verbatim
+                            </div>
+                            <div style={{ fontSize: 12, color: C.text, lineHeight: 1.6, fontStyle: "italic" }}>
+                              &ldquo;{lead.user_decision}&rdquo;
+                            </div>
+                          </div>
+                        )}
+
                         <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>Conversation Snapshot</div>
                         {lead.conversation_snapshot?.length ? (
                           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

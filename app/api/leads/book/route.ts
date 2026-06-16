@@ -11,16 +11,19 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { session_id, prospect_name, prospect_email, preferred_time } = await req.json();
+    const { session_id, source, prospect_name, prospect_email, preferred_time } = await req.json();
 
     if (!session_id || !prospect_name || !prospect_email) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Upsert — creates row if somehow it doesn't exist yet, updates if it does
+    // Upsert — creates row if somehow it doesn't exist yet, updates if it does.
+    // source included as a fallback in case this fires before the qualification
+    // write (which normally sets it first).
     const { error } = await supabase.from("leads").upsert(
       {
         session_id,
+        source:                 source || "direct",
         prospect_name,
         prospect_email,
         preferred_time:         preferred_time || null,

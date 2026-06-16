@@ -420,7 +420,7 @@ function IntelPanel({ intel, C }) {
 
 
 // ─── Booking card — calendar + time picker ───────────────────────────────────
-function BookingCard({ sessionId, C, onComplete }) {
+function BookingCard({ sessionId, source, C, onComplete }) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
 
   const [name,         setName]         = useState("");
@@ -476,6 +476,7 @@ function BookingCard({ sessionId, C, onComplete }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           session_id:    sessionId,
+          source:        source,
           prospect_name: name.trim(),
           prospect_email: email.trim(),
           preferred_time: formatFinal(),
@@ -656,6 +657,16 @@ export default function QuorumSDR() {
   const sessionId      = useRef(genSessionId());
   const hasWrittenLead = useRef(false);
 
+  // ── Source tracking — where did this visitor come from? ───────────────────
+  // Reads ?source=apollo_email / website / linkedin from the URL.
+  // Falls back to "direct" if no param is present (e.g. typed URL, bookmark).
+  const source = useRef((() => {
+    try {
+      const s = new URLSearchParams(window.location.search).get("source");
+      return s ? s.toLowerCase().trim() : "direct";
+    } catch { return "direct"; }
+  })());
+
   // ── Operator mode ──────────────────────────────────────────────────────────
   const [isOperator, setIsOperator] = useState(() => {
     try { return new URLSearchParams(window.location.search).get("op") === "true"; }
@@ -694,6 +705,7 @@ export default function QuorumSDR() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           session_id:               sessionId.current,
+          source:                   source.current,
           user_decision:            verbatimDecision,
           decision_category:        intelData.DECISION_CATEGORY        || null,
           estimated_stakes:         intelData.ESTIMATED_STAKES         || null,
@@ -923,6 +935,7 @@ export default function QuorumSDR() {
               {showBooking && !loading && (
                 <BookingCard
                   sessionId={sessionId.current}
+                  source={source.current}
                   C={C}
                   onComplete={() => setBookingDone(true)}
                 />
