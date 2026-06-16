@@ -61,7 +61,16 @@ I want to use a structured decision process as a tool in my coaching or consulti
 I am preparing a client for a high-stakes conversation and need the framing to be airtight
 My client keeps revisiting the same decision without resolution
 
-Poor fit: Operational or process decisions, Vendor selection, Low-risk reversible decisions, Pure research, Decisions already made and just needing execution
+QUALIFICATION RULE — CRITICAL:
+ANY decision with Medium, High, or Critical stakes qualifies for a Quorum session — regardless of whether it is personal or professional. This includes:
+- Personal and life decisions: parenting choices, relationship decisions, where to live, health choices, major life transitions
+- Financial decisions: large investments, property, business bets, portfolio allocation
+- Career decisions: pivots, senior role changes, entrepreneurship vs employment
+- Family decisions: education choices, care responsibilities, major family matters
+- Relationship decisions: partnerships, marriage, divorce, family planning
+Do NOT reject a decision because it is personal. If stakes are Medium or above, it qualifies. Only reject Low-stakes operational or already-decided questions.
+
+Poor fit: Truly low-stakes daily decisions, Vendor selection with no strategic consequence, Pure information gathering with no decision to make, Decisions already fully made and implemented
 
 DETECTING ADVISOR AND COACH PROSPECTS
 If the person uses phrases like "my client," "the founder I advise," "the CEO I work with," or "one of my coachees" — they are an advisor or coach, not the direct decision-maker.
@@ -97,13 +106,13 @@ BOOKING HANDOFF: Summarize the decision, stakes, key tension, and why Quorum wil
 
 RULES: Never oversell. Never claim certainty. Never argue. Never pitch features first. Be concise. Sound like a thoughtful advisor. Optimize for booked sessions, not conversation length.
 
-EXCHANGE LIMIT — STRICTLY ENFORCED:
-You have a maximum of 4 question-answer exchanges with the prospect. Plan accordingly:
-- Exchange 1: Open with a sharp discovery question
-- Exchange 2: One focused qualification follow-up
-- Exchange 3: Deliver your insight observation about the decision
-- Exchange 4: Extend the session invitation — this is your final message
-Never ask more than one question per exchange. Never exceed 4 exchanges. If you reach exchange 4, extend the invitation regardless of how much information remains ungathered.
+EXCHANGE LIMIT:
+You have a maximum of 6 question-answer exchanges. Plan efficiently:
+- Exchanges 1-2: Discovery and qualification
+- Exchange 3-4: Deliver insight, deepen if needed
+- Exchange 5: Extend the session invitation
+- Exchange 6: Final message only if needed to confirm booking
+Never ask more than one question per exchange. Keep responses concise. Always end each message with either a question OR a clear invitation so the user knows exactly what to do next.
 
 CRITICAL OUTPUT FORMAT — append this block at the end of EVERY response:
 
@@ -620,7 +629,7 @@ function BookingCard({ sessionId, C, onComplete }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function QuorumSDR() {
-  const [isDark,    setIsDark]    = useState(true);
+  const [isDark,    setIsDark]    = useState(false);
   const C = isDark ? DARK : LIGHT;
 
   const [messages,  setMessages]  = useState([]);
@@ -633,6 +642,15 @@ export default function QuorumSDR() {
   const [userExchanges, setUserExchanges] = useState(0);   // counts prospect messages (not the Hello)
   const [showBooking,   setShowBooking]   = useState(false);
   const [bookingDone,   setBookingDone]   = useState(false);
+  const [mobileTab,     setMobileTab]     = useState("chat"); // "chat"|"snapshot"
+  const [isMobile,      setIsMobile]      = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // ── Session tracking (lead write) ──────────────────────────────────────────
   const sessionId      = useRef(genSessionId());
@@ -664,11 +682,19 @@ export default function QuorumSDR() {
     if (hasWrittenLead.current) return;
     hasWrittenLead.current = true;
     try {
+      // Extract verbatim user decision — first real user message (index 2, after Hello at 0)
+      const verbatimDecision = snap
+        .filter(m => m.role === "user")
+        .slice(1, 2)   // skip the initial "Hello." — first real answer is the decision
+        .map(m => stripInternal(typeof m.content === "string" ? m.content : ""))
+        .join(" ") || null;
+
       await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           session_id:               sessionId.current,
+          user_decision:            verbatimDecision,
           decision_category:        intelData.DECISION_CATEGORY        || null,
           estimated_stakes:         intelData.ESTIMATED_STAKES         || null,
           importance_score:         parseInt(intelData.IMPORTANCE_SCORE) || null,
@@ -677,7 +703,7 @@ export default function QuorumSDR() {
           likelihood_of_booking:    intelData.LIKELIHOOD_OF_BOOKING    || null,
           recommended_next_message: intelData.RECOMMENDED_NEXT_MESSAGE || null,
           council_config:           intelData.COUNCIL_CONFIGURATION    || null,
-          conversation_snapshot:    snap.slice(-6).map(m => ({
+          conversation_snapshot:    snap.map(m => ({
             role:    m.role,
             content: stripInternal(typeof m.content === "string" ? m.content : ""),
           })),
@@ -691,19 +717,20 @@ export default function QuorumSDR() {
 
   // ── API call ───────────────────────────────────────────────────────────────
   const callAPI = async (msgs, exchangeCount = 0) => {
-    // Inject hard nudge on exchanges 3 and 4
     let systemContent = SYSTEM_PROMPT;
-    if (exchangeCount === 3) {
-      systemContent += "\n\nURGENT: This is exchange 3 of 4 maximum. You MUST deliver your insight observation now and transition toward the session invitation in this message.";
-    } else if (exchangeCount >= 4) {
-      systemContent += "\n\nURGENT: This is the FINAL exchange (4 of 4). You MUST extend the session invitation right now. Do not ask any further questions. Close with the invite.";
+    if (exchangeCount === 4) {
+      systemContent += "\n\nNote: You are at exchange 4 of 6. If you have enough context, begin moving toward your insight observation now.";
+    } else if (exchangeCount === 5) {
+      systemContent += "\n\nNote: You are at exchange 5 of 6. Deliver your insight and extend the session invitation in this message.";
+    } else if (exchangeCount >= 6) {
+      systemContent += "\n\nNote: This is your final message. Confirm the booking or close warmly.";
     }
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "deepseek-v4-pro",
-        max_tokens: 1000,
+        max_tokens: 2000,
         messages: [{ role: "system", content: systemContent }, ...msgs],
       }),
     });
@@ -776,13 +803,20 @@ export default function QuorumSDR() {
 
   return (
     <div style={{
-      display: "flex", height: "100vh", background: C.bg,
+      display: "flex",
+      flexDirection: isMobile ? "column" : "row",
+      height: "100vh", background: C.bg,
       fontFamily: "'Inter', -apple-system, 'Segoe UI', sans-serif",
       overflow: "hidden", transition: "background 0.3s",
     }}>
 
       {/* ── Chat panel ───────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", borderRight: `1px solid ${C.border}` }}>
+      <div style={{
+        flex: 1, minWidth: 0,
+        display: !isMobile || mobileTab === "chat" ? "flex" : "none",
+        flexDirection: "column",
+        borderRight: !isMobile ? `1px solid ${C.border}` : "none",
+      }}>
 
         {/* Header */}
         <div style={panelHeader}>
@@ -833,7 +867,7 @@ export default function QuorumSDR() {
         </div>
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "16px 14px 80px" : "28px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
           {!started ? (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 28, textAlign: "center", padding: "40px 0" }}>
               <div style={{
@@ -848,7 +882,7 @@ export default function QuorumSDR() {
                   Quorum Decision Advisor
                 </div>
                 <div style={{ fontSize: 13, color: C.textMuted, maxWidth: 320, lineHeight: 1.7, margin: "0 auto" }}>
-                  For founders, executives, and operators navigating decisions with real consequences.
+                  For anyone facing a decision that matters — personal or professional.
                 </div>
               </div>
               <button
@@ -914,7 +948,7 @@ export default function QuorumSDR() {
 
         {/* Input — hidden once booking card appears */}
         {started && !showBooking && (
-          <div style={{ padding: "16px 24px", borderTop: `1px solid ${C.border}`, background: C.panel, display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0, boxShadow: C.shadow }}>
+          <div style={{ padding: isMobile ? "10px 12px 10px" : "16px 24px", borderTop: `1px solid ${C.border}`, background: C.panel, display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0, boxShadow: C.shadow }}>
             <textarea
               ref={textareaRef}
               value={input}
@@ -949,7 +983,14 @@ export default function QuorumSDR() {
       </div>
 
       {/* ── Right panel (dual mode) ───────────────────────────────────────── */}
-      <div style={{ width: 300, flexShrink: 0, background: C.panel, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+      <div style={{
+        width: isMobile ? "100%" : 300,
+        flexShrink: 0, background: C.panel,
+        display: !isMobile || mobileTab === "snapshot" ? "flex" : "none",
+        flexDirection: "column",
+        overflowY: "auto",
+        paddingBottom: isMobile ? 60 : 0,
+      }}>
         <div style={{
           padding: "14px 20px", borderBottom: `1px solid ${C.border}`,
           display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
@@ -975,6 +1016,32 @@ export default function QuorumSDR() {
           : <DecisionSnapshot intel={intel} started={started} C={C} />
         }
       </div>
+
+      {/* ── Mobile tab bar ──────────────────────────────────────────────── */}
+      {isMobile && (
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, height: 52,
+          background: C.panel, borderTop: `1px solid ${C.border}`,
+          display: "flex", zIndex: 200,
+        }}>
+          {[
+            { id: "chat",     icon: "💬", label: "Chat"     },
+            { id: "snapshot", icon: "◈",  label: "Snapshot" },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setMobileTab(tab.id)} style={{
+              flex: 1, background: "none", border: "none", cursor: "pointer",
+              display: "flex", flexDirection: "column", alignItems: "center",
+              justifyContent: "center", gap: 2,
+              color: mobileTab === tab.id ? C.accent : C.textDim,
+              borderTop: mobileTab === tab.id ? `2px solid ${C.accent}` : "2px solid transparent",
+              transition: "all 0.2s",
+            }}>
+              <span style={{ fontSize: 18, lineHeight: 1 }}>{tab.icon}</span>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <style>{`
         @keyframes qdot {
