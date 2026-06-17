@@ -560,6 +560,9 @@ function BookingCard({ sessionId, source, C, onComplete }) {
         <div style={{ marginTop: 12, fontSize: 12, color: C.success, fontWeight: 600 }}>
           {formatFinal()}
         </div>
+        <div style={{ marginTop: 14, fontSize: 11, color: C.textDim }}>
+          More on Quorum: <a href="https://quorumvault.org" target="_blank" rel="noopener noreferrer" style={{ color: C.textMuted, textDecoration: "underline" }}>quorumvault.org</a>
+        </div>
       </div>
     );
   }
