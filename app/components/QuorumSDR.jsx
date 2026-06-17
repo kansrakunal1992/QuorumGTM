@@ -525,7 +525,7 @@ function BookingCard({ sessionId, source, C, onComplete }) {
     }}>
       <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 3 }}>Book your Quorum session</div>
       <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 18, lineHeight: 1.5 }}>
-        45 minutes. We arrive prepared with a structured brief on your decision.
+        25 minutes — extends if the conversation is going well. We arrive prepared with a structured brief on your decision.
       </div>
 
       {/* Name + Email */}
@@ -643,7 +643,7 @@ export default function QuorumSDR() {
   const [userExchanges, setUserExchanges] = useState(0);   // counts prospect messages (not the Hello)
   const [showBooking,   setShowBooking]   = useState(false);
   const [bookingDone,   setBookingDone]   = useState(false);
-  const [mobileTab,     setMobileTab]     = useState("chat"); // "chat"|"snapshot"
+  const [snapshotOpen,  setSnapshotOpen]  = useState(false); // mobile: bottom-sheet open state
   const [isMobile,      setIsMobile]      = useState(false);
 
   useEffect(() => {
@@ -814,10 +814,10 @@ export default function QuorumSDR() {
   };
 
   return (
-    <div style={{
+    <div className="qsdr-shell" style={{
       display: "flex",
       flexDirection: isMobile ? "column" : "row",
-      height: "100vh", background: C.bg,
+      background: C.bg,
       fontFamily: "'Inter', -apple-system, 'Segoe UI', sans-serif",
       overflow: "hidden", transition: "background 0.3s",
     }}>
@@ -825,7 +825,7 @@ export default function QuorumSDR() {
       {/* ── Chat panel ───────────────────────────────────────────────────── */}
       <div style={{
         flex: 1, minWidth: 0,
-        display: !isMobile || mobileTab === "chat" ? "flex" : "none",
+        display: "flex",
         flexDirection: "column",
         borderRight: !isMobile ? `1px solid ${C.border}` : "none",
       }}>
@@ -961,7 +961,7 @@ export default function QuorumSDR() {
 
         {/* Input — hidden once booking card appears */}
         {started && !showBooking && (
-          <div style={{ padding: isMobile ? "10px 12px 10px" : "16px 24px", borderTop: `1px solid ${C.border}`, background: C.panel, display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0, boxShadow: C.shadow }}>
+          <div style={{ padding: isMobile ? "10px 12px 62px" : "16px 24px", borderTop: `1px solid ${C.border}`, background: C.panel, display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0, boxShadow: C.shadow }}>
             <textarea
               ref={textareaRef}
               value={input}
@@ -995,21 +995,44 @@ export default function QuorumSDR() {
         )}
       </div>
 
-      {/* ── Right panel (dual mode) ───────────────────────────────────────── */}
+      {/* ── Backdrop behind the mobile snapshot sheet ───────────────────────── */}
+      {isMobile && snapshotOpen && (
+        <div
+          onClick={() => setSnapshotOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 190 }}
+        />
+      )}
+
+      {/* ── Right panel — desktop sidebar / mobile bottom sheet ─────────────── */}
       <div style={{
         width: isMobile ? "100%" : 300,
         flexShrink: 0, background: C.panel,
-        display: !isMobile || mobileTab === "snapshot" ? "flex" : "none",
+        display: "flex",
         flexDirection: "column",
         overflowY: "auto",
-        paddingBottom: isMobile ? 60 : 0,
+        ...(isMobile ? {
+          position: "fixed", left: 0, right: 0, bottom: 52,
+          height: "min(68vh, 600px)",
+          borderRadius: "18px 18px 0 0",
+          boxShadow: "0 -10px 34px rgba(0,0,0,0.28)",
+          zIndex: 220,
+          paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
+          transform: snapshotOpen ? "translateY(0)" : "translateY(120%)",
+          transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
+        } : { paddingBottom: 0 }),
       }}>
         <div style={{
           padding: "14px 20px", borderBottom: `1px solid ${C.border}`,
           display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
           background: isOperator ? (isDark ? "rgba(245,166,35,0.04)" : "rgba(201,119,6,0.04)") : C.panel,
-          transition: "background 0.3s", boxShadow: C.shadow,
+          transition: "background 0.3s", boxShadow: C.shadow, position: "relative",
         }}>
+          {isMobile && (
+            <div style={{
+              position: "absolute", top: 7, left: "50%", transform: "translateX(-50%)",
+              width: 36, height: 4, borderRadius: 2, background: C.border,
+            }} />
+          )}
           <div style={{
             width: 5, height: 5, borderRadius: "50%",
             background: isOperator ? C.warn : C.accent,
@@ -1022,6 +1045,17 @@ export default function QuorumSDR() {
           }}>
             {isOperator ? "⚙  Operator View" : "Decision Snapshot"}
           </span>
+          {isMobile && (
+            <button
+              onClick={() => setSnapshotOpen(false)}
+              aria-label="Close"
+              style={{
+                width: 24, height: 24, borderRadius: 7, border: "none", cursor: "pointer",
+                background: C.border, color: C.textDim, fontSize: 13, lineHeight: 1,
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}
+            >✕</button>
+          )}
         </div>
 
         {isOperator
@@ -1038,15 +1072,15 @@ export default function QuorumSDR() {
           display: "flex", zIndex: 200,
         }}>
           {[
-            { id: "chat",     icon: "💬", label: "Chat"     },
-            { id: "snapshot", icon: "◈",  label: "Snapshot" },
+            { id: "chat",     icon: "💬", label: "Chat",     active: !snapshotOpen, onClick: () => setSnapshotOpen(false) },
+            { id: "snapshot", icon: "◈",  label: "Snapshot", active: snapshotOpen,  onClick: () => setSnapshotOpen(true)  },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setMobileTab(tab.id)} style={{
+            <button key={tab.id} onClick={tab.onClick} style={{
               flex: 1, background: "none", border: "none", cursor: "pointer",
               display: "flex", flexDirection: "column", alignItems: "center",
               justifyContent: "center", gap: 2,
-              color: mobileTab === tab.id ? C.accent : C.textDim,
-              borderTop: mobileTab === tab.id ? `2px solid ${C.accent}` : "2px solid transparent",
+              color: tab.active ? C.accent : C.textDim,
+              borderTop: tab.active ? `2px solid ${C.accent}` : "2px solid transparent",
               transition: "all 0.2s",
             }}>
               <span style={{ fontSize: 18, lineHeight: 1 }}>{tab.icon}</span>
@@ -1057,6 +1091,7 @@ export default function QuorumSDR() {
       )}
 
       <style>{`
+        .qsdr-shell { height: 100vh; height: 100dvh; }
         @keyframes qdot {
           0%,60%,100% { opacity:.25; transform:scale(.75); }
           30%          { opacity:1;   transform:scale(1.1); }
