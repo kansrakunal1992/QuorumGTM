@@ -102,9 +102,9 @@ Before mentioning Quorum, offer one sharp observation:
 Stage 5 — Invite
 Only after value is created: "This is exactly the type of decision Quorum was designed for. We use a structured process to pressure-test the framing, surface hidden dependencies, and integrate multiple perspectives before arriving at a recommendation. Would you be open to running this through a live session?"
 
-BOOKING HANDOFF: Summarize the decision, stakes, key tension, and why Quorum will help. Then confirm booking.
+BOOKING HANDOFF: Summarize the decision, stakes, key tension, and why Quorum will help. Do not propose specific advisor roles or a custom panel in this summary — describe the Council only as "six advisors, each from a distinct cognitive frame," never by named role. Then confirm booking.
 
-RULES: Never oversell. Never claim certainty. Never argue. Never pitch features first. Be concise. Sound like a thoughtful advisor. Optimize for booked sessions, not conversation length.
+RULES: Never oversell. Never claim certainty. Never argue. Never pitch features first. Be concise. Sound like a thoughtful advisor. Optimize for booked sessions, not conversation length. Never invent, propose, or imply a custom-assembled panel of advisors tailored to the prospect's specific decision (e.g., "a CFO, an immigrant career strategist, a life-design coach") — the Council's composition is fixed and does not change per session. If you reference how the Council works at all, the only accurate description is: "Six advisors, each from a distinct cognitive frame, review the decision." Do not name specific roles, titles, or expertise areas beyond that.
 
 EXCHANGE LIMIT:
 You have a maximum of 6 question-answer exchanges. Plan efficiently:
@@ -125,7 +125,6 @@ COMPLEXITY_SCORE: [1-10 or N/A]
 FIT_SCORE: [1-10 or N/A]
 LIKELIHOOD_OF_BOOKING: [Low / Medium / High / Unknown]
 RECOMMENDED_NEXT_MESSAGE: [One tactical sentence]
-COUNCIL_CONFIGURATION: [Suggested perspectives for the Quorum session, or TBD]
 QUALIFIED: [YES / NO / PENDING]
 ===END_INTERNAL===`;
 
@@ -148,6 +147,10 @@ function stripInternal(text) {
 function genSessionId() {
   return `q_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
+
+// Council composition is fixed product architecture, never session-specific.
+// Canonical public phrasing per handover doc KDD 94 — do not name internal persona labels here.
+const COUNCIL_DESCRIPTION = "Six advisors, each from a distinct cognitive frame, review the decision.";
 
 // ─── Stage metadata ───────────────────────────────────────────────────────────
 const STAGES = [
@@ -228,8 +231,7 @@ function TypingDots({ C }) {
 
 function DecisionSnapshot({ intel, started, C }) {
   const stageIdx = intel ? STAGES.findIndex(s => s.key === intel.STAGE) : -1;
-  const council = intel?.COUNCIL_CONFIGURATION;
-  const showCouncil = council && council !== "TBD";
+  const showCouncil = intel?.DECISION_CATEGORY && intel.DECISION_CATEGORY !== "Not yet identified";
   const isBooked = intel?.STAGE === "Booked";
 
   return (
@@ -301,7 +303,7 @@ function DecisionSnapshot({ intel, started, C }) {
           {showCouncil && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "13px 14px", boxShadow: C.shadow }}>
               <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Perspectives Quorum Will Bring In</div>
-              <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.65 }}>{council}</div>
+              <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.65 }}>{COUNCIL_DESCRIPTION}</div>
             </div>
           )}
 
@@ -322,6 +324,48 @@ function DecisionSnapshot({ intel, started, C }) {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// Mobile: a compact horizontal stand-in for the full Decision Snapshot, docked
+// under the header so progress is visible without leaving the chat screen.
+function MobileProgressTracker({ intel, C }) {
+  const steps = STAGES.slice(0, 5);
+  const stageIdx = intel ? steps.findIndex(s => s.key === intel.STAGE) : -1;
+  const currentLabel = stageIdx >= 0 ? steps[stageIdx].userLabel : steps[0].userLabel;
+
+  return (
+    <div style={{
+      padding: "10px 16px 9px", borderBottom: `1px solid ${C.border}`,
+      background: C.panel, flexShrink: 0,
+    }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        {steps.map((s, i) => {
+          const done = stageIdx > i, active = stageIdx === i;
+          return (
+            <span key={s.key} style={{ display: "flex", alignItems: "center", flex: i < steps.length - 1 ? 1 : "0 0 auto" }}>
+              <span style={{
+                width: 9, height: 9, borderRadius: "50%", flexShrink: 0,
+                background: done ? C.success : active ? C.accent : "transparent",
+                border: `2px solid ${done ? C.success : active ? C.accent : C.borderBright}`,
+                boxShadow: active ? `0 0 6px ${C.accentGlow}` : "none",
+                transition: "all 0.3s",
+              }} />
+              {i < steps.length - 1 && (
+                <span style={{
+                  flex: 1, height: 2, margin: "0 4px",
+                  background: stageIdx > i ? C.success : C.border,
+                  transition: "background 0.3s",
+                }} />
+              )}
+            </span>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 10, color: C.textDim, marginTop: 6, letterSpacing: "0.02em" }}>
+        {currentLabel}
+      </div>
     </div>
   );
 }
@@ -401,7 +445,7 @@ function IntelPanel({ intel, C }) {
 
       <div style={cardStyle}>
         <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 7 }}>Council Config</div>
-        <div style={{ fontSize: 11.5, color: C.textMuted, lineHeight: 1.65 }}>{intel.COUNCIL_CONFIGURATION || "TBD"}</div>
+        <div style={{ fontSize: 11.5, color: C.textMuted, lineHeight: 1.65 }}>{COUNCIL_DESCRIPTION} (fixed — not session-specific)</div>
       </div>
 
       {intel.QUALIFIED === "YES" && (
@@ -643,7 +687,6 @@ export default function QuorumSDR() {
   const [userExchanges, setUserExchanges] = useState(0);   // counts prospect messages (not the Hello)
   const [showBooking,   setShowBooking]   = useState(false);
   const [bookingDone,   setBookingDone]   = useState(false);
-  const [snapshotOpen,  setSnapshotOpen]  = useState(false); // mobile: bottom-sheet open state
   const [isMobile,      setIsMobile]      = useState(false);
 
   useEffect(() => {
@@ -714,7 +757,7 @@ export default function QuorumSDR() {
           fit_score:                parseInt(intelData.FIT_SCORE)        || null,
           likelihood_of_booking:    intelData.LIKELIHOOD_OF_BOOKING    || null,
           recommended_next_message: intelData.RECOMMENDED_NEXT_MESSAGE || null,
-          council_config:           intelData.COUNCIL_CONFIGURATION    || null,
+          council_config:           COUNCIL_DESCRIPTION,
           conversation_snapshot:    snap.map(m => ({
             role:    m.role,
             content: stripInternal(typeof m.content === "string" ? m.content : ""),
@@ -878,8 +921,10 @@ export default function QuorumSDR() {
           </div>
         </div>
 
+        {isMobile && started && <MobileProgressTracker intel={intel} C={C} />}
+
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "16px 14px 80px" : "28px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "16px 14px" : "28px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
           {!started ? (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 28, textAlign: "center", padding: "40px 0" }}>
               <div style={{
@@ -961,7 +1006,7 @@ export default function QuorumSDR() {
 
         {/* Input — hidden once booking card appears */}
         {started && !showBooking && (
-          <div style={{ padding: isMobile ? "10px 12px 62px" : "16px 24px", borderTop: `1px solid ${C.border}`, background: C.panel, display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0, boxShadow: C.shadow }}>
+          <div style={{ padding: isMobile ? "10px 12px calc(10px + env(safe-area-inset-bottom))" : "16px 24px", borderTop: `1px solid ${C.border}`, background: C.panel, display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0, boxShadow: C.shadow }}>
             <textarea
               ref={textareaRef}
               value={input}
@@ -995,98 +1040,36 @@ export default function QuorumSDR() {
         )}
       </div>
 
-      {/* ── Backdrop behind the mobile snapshot sheet ───────────────────────── */}
-      {isMobile && snapshotOpen && (
-        <div
-          onClick={() => setSnapshotOpen(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 190 }}
-        />
-      )}
-
-      {/* ── Right panel — desktop sidebar / mobile bottom sheet ─────────────── */}
-      <div style={{
-        width: isMobile ? "100%" : 300,
-        flexShrink: 0, background: C.panel,
-        display: "flex",
-        flexDirection: "column",
-        overflowY: "auto",
-        ...(isMobile ? {
-          position: "fixed", left: 0, right: 0, bottom: 52,
-          height: "min(68vh, 600px)",
-          borderRadius: "18px 18px 0 0",
-          boxShadow: "0 -10px 34px rgba(0,0,0,0.28)",
-          zIndex: 220,
-          paddingBottom: "calc(16px + env(safe-area-inset-bottom))",
-          transform: snapshotOpen ? "translateY(0)" : "translateY(120%)",
-          transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
-        } : { paddingBottom: 0 }),
-      }}>
+      {/* ── Right panel — desktop only; mobile uses the inline progress tracker ── */}
+      {!isMobile && (
         <div style={{
-          padding: "14px 20px", borderBottom: `1px solid ${C.border}`,
-          display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
-          background: isOperator ? (isDark ? "rgba(245,166,35,0.04)" : "rgba(201,119,6,0.04)") : C.panel,
-          transition: "background 0.3s", boxShadow: C.shadow, position: "relative",
+          width: 300, flexShrink: 0, background: C.panel,
+          display: "flex", flexDirection: "column", overflowY: "auto",
         }}>
-          {isMobile && (
-            <div style={{
-              position: "absolute", top: 7, left: "50%", transform: "translateX(-50%)",
-              width: 36, height: 4, borderRadius: 2, background: C.border,
-            }} />
-          )}
           <div style={{
-            width: 5, height: 5, borderRadius: "50%",
-            background: isOperator ? C.warn : C.accent,
-            boxShadow: `0 0 6px ${isOperator ? C.warn : C.accent}`,
-            transition: "all 0.3s",
-          }} />
-          <span style={{
-            fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase",
-            color: isOperator ? C.warn : C.textMuted, transition: "color 0.3s", flex: 1,
+            padding: "14px 20px", borderBottom: `1px solid ${C.border}`,
+            display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
+            background: isOperator ? (isDark ? "rgba(245,166,35,0.04)" : "rgba(201,119,6,0.04)") : C.panel,
+            transition: "background 0.3s", boxShadow: C.shadow,
           }}>
-            {isOperator ? "⚙  Operator View" : "Decision Snapshot"}
-          </span>
-          {isMobile && (
-            <button
-              onClick={() => setSnapshotOpen(false)}
-              aria-label="Close"
-              style={{
-                width: 24, height: 24, borderRadius: 7, border: "none", cursor: "pointer",
-                background: C.border, color: C.textDim, fontSize: 13, lineHeight: 1,
-                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-              }}
-            >✕</button>
-          )}
-        </div>
-
-        {isOperator
-          ? <IntelPanel intel={intel} C={C} />
-          : <DecisionSnapshot intel={intel} started={started} C={C} />
-        }
-      </div>
-
-      {/* ── Mobile tab bar ──────────────────────────────────────────────── */}
-      {isMobile && (
-        <div style={{
-          position: "fixed", bottom: 0, left: 0, right: 0, height: 52,
-          background: C.panel, borderTop: `1px solid ${C.border}`,
-          display: "flex", zIndex: 200,
-        }}>
-          {[
-            { id: "chat",     icon: "💬", label: "Chat",     active: !snapshotOpen, onClick: () => setSnapshotOpen(false) },
-            { id: "snapshot", icon: "◈",  label: "Snapshot", active: snapshotOpen,  onClick: () => setSnapshotOpen(true)  },
-          ].map(tab => (
-            <button key={tab.id} onClick={tab.onClick} style={{
-              flex: 1, background: "none", border: "none", cursor: "pointer",
-              display: "flex", flexDirection: "column", alignItems: "center",
-              justifyContent: "center", gap: 2,
-              color: tab.active ? C.accent : C.textDim,
-              borderTop: tab.active ? `2px solid ${C.accent}` : "2px solid transparent",
-              transition: "all 0.2s",
+            <div style={{
+              width: 5, height: 5, borderRadius: "50%",
+              background: isOperator ? C.warn : C.accent,
+              boxShadow: `0 0 6px ${isOperator ? C.warn : C.accent}`,
+              transition: "all 0.3s",
+            }} />
+            <span style={{
+              fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase",
+              color: isOperator ? C.warn : C.textMuted, transition: "color 0.3s", flex: 1,
             }}>
-              <span style={{ fontSize: 18, lineHeight: 1 }}>{tab.icon}</span>
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>{tab.label}</span>
-            </button>
-          ))}
+              {isOperator ? "⚙  Operator View" : "Decision Snapshot"}
+            </span>
+          </div>
+
+          {isOperator
+            ? <IntelPanel intel={intel} C={C} />
+            : <DecisionSnapshot intel={intel} started={started} C={C} />
+          }
         </div>
       )}
 
