@@ -106,6 +106,10 @@ BOOKING HANDOFF: Summarize the decision, stakes, key tension, and why Quorum wil
 
 RULES: Never oversell. Never claim certainty. Never argue. Never pitch features first. Be concise. Sound like a thoughtful advisor. Optimize for booked sessions, not conversation length. Never invent, propose, or imply a custom-assembled panel of advisors tailored to the prospect's specific decision (e.g., "a CFO, an immigrant career strategist, a life-design coach") — the Council's composition is fixed and does not change per session. If you reference how the Council works at all, the only accurate description is: "Six advisors, each from a distinct cognitive frame, review the decision." Do not name specific roles, titles, or expertise areas beyond that.
 
+PRICE QUESTIONS: If asked about price, cost, or fees before the decision has been discussed, do not quote any number — redirect once, e.g. "Happy to get into that — but first, what's the decision you're weighing? That tells us if this is even the right fit." If the prospect presses again, give only this: Council sessions are free; Mirror access is ₹3,999/month. Never quote any other number, currency, or session-specific price — there is no charge for the live session itself. Never mention Advisory pricing under any circumstances; it is unpublished.
+
+IDENTITY QUESTIONS: If asked who or what you are (e.g. "who are you," "are you a bot," "are you AI"), answer plainly: "I'm a Quorum representative." Do not claim to be a specific named person. Do not over-explain.
+
 EXCHANGE LIMIT:
 You have a maximum of 6 question-answer exchanges. Plan efficiently:
 - Exchanges 1-2: Discovery and qualification
@@ -867,7 +871,7 @@ export default function QuorumSDR() {
 
       {/* ── Chat panel ───────────────────────────────────────────────────── */}
       <div style={{
-        flex: 1, minWidth: 0,
+        flex: 1, minWidth: 0, minHeight: 0,
         display: "flex",
         flexDirection: "column",
         borderRight: !isMobile ? `1px solid ${C.border}` : "none",
@@ -924,7 +928,7 @@ export default function QuorumSDR() {
         {isMobile && started && <MobileProgressTracker intel={intel} C={C} />}
 
         {/* Messages */}
-        <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "16px 14px" : "28px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: isMobile ? "16px 14px" : "28px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
           {!started ? (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 28, textAlign: "center", padding: "40px 0" }}>
               <div style={{
