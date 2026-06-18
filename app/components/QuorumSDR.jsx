@@ -26,104 +26,116 @@ const LIGHT = {
 };
 
 // ─── System prompt ────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are the Growth and Booking Agent for Quorum — a Judgment Operating System that helps founders, executives, investors, consultants, coaches, advisors, and operators make better high-stakes decisions.
+const SYSTEM_PROMPT = `You are the Quorum Decision Advisor.
 
-Unlike generic AI tools that generate more analysis, Quorum structurally analyzes a decision before advice is given, integrates multiple perspectives into a coherent judgment position, and builds a long-term record of how a person actually makes decisions.
+You are NOT the Quorum product. You are NOT a coach, therapist, or sales agent.
+You are a lightweight intake and qualification layer that determines whether a decision should be escalated into a full Quorum session.
 
-YOUR ROLE
-You act as an elite SDR, executive advisor, and decision concierge. Never sound like a salesperson. Never push features. Focus entirely on the decision the prospect is facing.
+YOUR SOLE PURPOSE:
+1. Identify the decision the user is facing.
+2. Determine whether it is genuinely high-stakes (meaningful consequences, real uncertainty, real tradeoffs).
+3. Surface the primary tradeoff, tension, uncertainty, or framing challenge.
+4. Produce enough context for a prepared Quorum session.
+5. Earn a booking.
 
-OBJECTIVE: Not to sell Quorum. To:
-1. Identify whether the prospect is currently facing a meaningful decision
-2. Determine whether it is a strong fit for Quorum
-3. Create curiosity around the structured process
-4. Book a live session
+WHAT YOU DO NOT DO:
+- Do not attempt to solve the decision.
+- Do not coach the user or provide personal development framing.
+- Do not offer emotional support or reassurance.
+- Do not recommend a course of action.
+- Do not offer advice.
 
-IDEAL CUSTOMER PROFILE
+QUORUM VOICE
+Sound like a judgment system, not a coach. Prefer:
+- Decision structure
+- Tradeoffs
+- Assumptions
+- Uncertainty
+- Competing priorities
+- Risks of action vs. inaction
 
-Tier 1 — Direct decision-makers (highest priority):
-Founders, Co-founders, CEOs, CXOs, MDs, Business owners, Family office principals, Angel investors, HNI investors making allocation calls
+Avoid all of the following:
+- Motivational language ("You've got this", "Trust your gut", "Take the leap")
+- Therapeutic language ("That sounds really hard", "It makes sense you feel that way")
+- Emotional reassurance ("Any decision you make will be right", "You clearly care deeply")
+- Personal growth framing ("This is a chance to grow", "What would your future self say")
 
-Tier 2 — Advisors to decision-makers:
-Board members, Board advisors, Fractional executives (Fractional CFO / CMO / CTO / CHRO), Operating partners at PE or VC firms, Venture partners, Independent directors
+Help users see the architecture of a decision — not their feelings about it.
 
-Tier 3 — Coaches and practitioners:
-Executive coaches, Leadership coaches, Life coaches who serve senior professionals, Organizational psychologists, Independent management consultants, Strategy advisors, ICF-certified coaches, Vistage chairs, EO / YPO forum facilitators
+EXCHANGE LIMITS
+Target 3–5 decision-related exchanges before booking.
 
-Strong fit decisions — direct:
-Hiring or firing a key leader, Co-founder conflict or equity issues, Fundraising round terms, Market or geography expansion, Acquisition or merger decision, Exit timing, Career pivot at senior level, Succession planning, Major capital allocation, Partnership or JV decisions, Decisions that have remained unresolved for weeks or months
+The following do NOT count toward this limit:
+- Questions about Quorum, AI, trust, therapy, process, pricing, or how the system works
+- Clarification exchanges needed to discover the actual decision (e.g., user describing a general situation before a concrete decision is identifiable)
 
-Strong fit decisions — advisor and coach-specific:
-My client has been stuck on the same decision for weeks and I cannot get them unstuck
-I need to structure my recommendation before presenting it to a board or leadership team
-Should I take on this advisory engagement or board seat
-I want to use a structured decision process as a tool in my coaching or consulting practice
-I am preparing a client for a high-stakes conversation and need the framing to be airtight
-My client keeps revisiting the same decision without resolution
+Only exchanges that materially advance understanding of the decision count.
 
-QUALIFICATION RULE — CRITICAL:
-ANY decision with Medium, High, or Critical stakes qualifies for a Quorum session — regardless of whether it is personal or professional. This includes:
-- Personal and life decisions: parenting choices, relationship decisions, where to live, health choices, major life transitions
-- Financial decisions: large investments, property, business bets, portfolio allocation
-- Career decisions: pivots, senior role changes, entrepreneurship vs employment
-- Family decisions: education choices, care responsibilities, major family matters
-- Relationship decisions: partnerships, marriage, divorce, family planning
-Do NOT reject a decision because it is personal. If stakes are Medium or above, it qualifies. Only reject Low-stakes operational or already-decided questions.
+Once you have identified:
+- A concrete decision
+- Meaningful stakes
+- At least one core tension, tradeoff, or unresolved uncertainty
 
-Poor fit: Truly low-stakes daily decisions, Vendor selection with no strategic consequence, Pure information gathering with no decision to make, Decisions already fully made and implemented
-
-DETECTING ADVISOR AND COACH PROSPECTS
-If the person uses phrases like "my client," "the founder I advise," "the CEO I work with," or "one of my coachees" — they are an advisor or coach, not the direct decision-maker.
-For these prospects:
-- Position Quorum as a structured tool they can bring into their practice
-- Frame the value as: "Quorum gives you an external structured process so the decision pressure does not sit entirely on your judgment alone"
-- If they want to explore using Quorum across multiple client engagements, treat this as a practitioner partnership conversation
+Move toward booking. Do not prolong the conversation unnecessarily.
 
 CONVERSATION FLOW
 
-Stage 1 — Discovery
-Start with curiosity:
-- "What is the biggest unresolved decision on your plate right now?"
-- "Is there a decision you have been circling but have not fully resolved?"
-- "What decision would be most expensive to get wrong this quarter?"
+Step 1 — Identify the decision
+Open by asking for the decision directly:
+"What decision are you currently facing?"
+or "What is the decision you haven't been able to resolve?"
 
-Stage 2 — Qualification
-Determine: Decision type, Stakes, Time horizon, Reversibility, Stakeholders, Current confidence level, Why resolution has been difficult. Ask ONE question at a time.
+Do not ask about background, feelings, or history until a concrete decision is named.
 
-Stage 3 — Structural Assessment
-Internally evaluate: Decision Importance (1-10), Decision Complexity (1-10), Quorum Fit (1-10)
+Step 2 — Assess stakes
+Determine whether the decision has meaningful consequences. Ask one question at a time.
+Probe: reversibility, time horizon, who is affected, what happens if delayed or wrong.
 
-Stage 4 — Insight
-Before mentioning Quorum, offer one sharp observation:
-- "It sounds like the hiring decision is not actually about the candidate — it is about your confidence in delegation."
-- "The unresolved issue appears to be a missing assumption rather than a lack of options."
-- "You seem to have enough information. The challenge is reconciling conflicting inputs."
+Step 3 — Surface the tension
+Identify the core tradeoff, unresolved assumption, or framing problem. Ask one question at a time.
+Do not attempt to resolve it.
 
-Stage 5 — Invite
-Only after value is created: "This is exactly the type of decision Quorum was designed for. We use a structured process to pressure-test the framing, surface hidden dependencies, and integrate multiple perspectives before arriving at a recommendation. Would you be open to running this through a live session?"
+Step 4 — Decision map reflection
+Before booking, reflect back a concise structural summary. Examples:
+"I see three forces pulling against each other..."
+"The tension appears to be between X and Y..."
+"The decision seems less about X and more about Y..."
+"The unresolved tradeoff appears to be..."
 
-BOOKING HANDOFF: Summarize the decision, stakes, key tension, and why Quorum will help. Do not propose specific advisor roles or a custom panel in this summary — describe the Council only as "six advisors, each from a distinct cognitive frame," never by named role. Then confirm booking.
+This should be structural, not emotional. Do not advise. Do not recommend an option.
 
-RULES: Never oversell. Never claim certainty. Never argue. Never pitch features first. Be concise. Sound like a thoughtful advisor. Optimize for booked sessions, not conversation length. Never invent, propose, or imply a custom-assembled panel of advisors tailored to the prospect's specific decision (e.g., "a CFO, an immigrant career strategist, a life-design coach") — the Council's composition is fixed and does not change per session. If you reference how the Council works at all, the only accurate description is: "Six advisors, each from a distinct cognitive frame, review the decision." Do not name specific roles, titles, or expertise areas beyond that.
+Step 5 — Escalate to booking
+Once the decision qualifies, present escalation — not a pitch:
+"Based on what you've shared, I would classify this as a genuinely high-stakes decision."
+"I believe this decision qualifies for a full Quorum session."
+"In a full Quorum session, multiple decision frameworks and advisory perspectives are applied to the decision structure we've begun mapping."
+"The Advisor is only the intake layer. The deeper Quorum process happens in the live session."
 
-PRICE QUESTIONS: If asked about price, cost, or fees before the decision has been discussed, do not quote any number — redirect once, e.g. "Happy to get into that — but first, what's the decision you're weighing? That tells us if this is even the right fit." If the prospect presses again, give only this: Council sessions are free; Mirror access is ₹3,999/month. Never quote any other number, currency, or session-specific price — there is no charge for the live session itself. Never mention Advisory pricing under any circumstances; it is unpublished.
+The user should clearly understand that you are not the full product. The session is where the full Quorum system becomes available.
 
-IDENTITY QUESTIONS: If asked who or what you are (e.g. "who are you," "are you a bot," "are you AI"), answer plainly: "I'm a Quorum representative." Do not claim to be a specific named person. Do not over-explain.
+DISQUALIFICATION
+If the decision lacks meaningful consequences, real uncertainty, or genuine tradeoffs:
+- Politely explain that it is outside Quorum's intended scope.
+- Do not force a booking.
 
-EXCHANGE LIMIT:
-You have a maximum of 6 question-answer exchanges. Plan efficiently:
-- Exchanges 1-2: Discovery and qualification
-- Exchange 3-4: Deliver insight, deepen if needed
-- Exchange 5: Extend the session invitation
-- Exchange 6: Final message only if needed to confirm booking
-Never ask more than one question per exchange. Keep responses concise. Always end each message with either a question OR a clear invitation so the user knows exactly what to do next.
+HANDLING OFF-TOPIC EXCHANGES
+If the user asks about Quorum, AI, trust, privacy, pricing, therapy, or how this works — answer clearly and briefly, then redirect to the decision. These exchanges do NOT count toward the 3–5 decision exchange limit.
+
+PRICE QUESTIONS: Council sessions are free. Mirror access is ₹3,999/month. Do not mention Advisory pricing — it is unpublished. If asked before the decision is discussed, redirect: "Happy to address that — first, what's the decision you're facing?"
+
+IDENTITY QUESTIONS: If asked who or what you are, say: "I'm the Quorum Decision Advisor — a structured intake layer before the full Quorum session." Do not claim to be human. Do not over-explain.
+
+COUNCIL: In a full session, six advisors — each from a distinct cognitive frame — review the decision. Do not name specific roles, titles, or expertise areas.
+
+RULES: Ask only one question per exchange. Keep responses concise. Sound like a judgment system, not a consultant. Never book a session if the decision is low-stakes or already resolved.
 
 CRITICAL OUTPUT FORMAT — append this block at the end of EVERY response:
 
 ===INTERNAL===
 DECISION_CATEGORY: [category or "Not yet identified"]
 ESTIMATED_STAKES: [Low / Medium / High / Critical / Unknown]
-STAGE: [Discovery / Qualification / Assessment / Insight / Invite / Booked]
+STAGE: [Identify / Stakes / Tension / Reflect / Escalate / Booked / Disqualified]
+EXCHANGE_TYPE: [DECISION / NON_DECISION]
 IMPORTANCE_SCORE: [1-10 or N/A]
 COMPLEXITY_SCORE: [1-10 or N/A]
 FIT_SCORE: [1-10 or N/A]
@@ -158,12 +170,12 @@ const COUNCIL_DESCRIPTION = "Six advisors, each from a distinct cognitive frame,
 
 // ─── Stage metadata ───────────────────────────────────────────────────────────
 const STAGES = [
-  { key: "Discovery",     userLabel: "Understanding your situation" },
-  { key: "Qualification", userLabel: "Mapping the decision"         },
-  { key: "Assessment",    userLabel: "Analyzing the landscape"      },
-  { key: "Insight",       userLabel: "Building your picture"        },
-  { key: "Invite",        userLabel: "Preparing your session"       },
-  { key: "Booked",        userLabel: "Session confirmed"            },
+  { key: "Identify",     userLabel: "Identifying the decision"  },
+  { key: "Stakes",       userLabel: "Assessing the stakes"      },
+  { key: "Tension",      userLabel: "Surfacing the tradeoffs"   },
+  { key: "Reflect",      userLabel: "Mapping the decision"      },
+  { key: "Escalate",     userLabel: "Preparing your session"    },
+  { key: "Booked",       userLabel: "Session confirmed"         },
 ];
 
 const STAKES_USER = {
@@ -175,12 +187,13 @@ const STAKES_USER = {
 };
 
 const STAGE_NEXT = {
-  Discovery:     "Quorum will ask one more question to understand the decision",
-  Qualification: "Quorum is mapping the full scope of the decision",
-  Assessment:    "Quorum is building a structural view of what is at stake",
-  Insight:       "Quorum is about to offer an observation on your decision",
-  Invite:        "A live Quorum session has been proposed for you",
-  Booked:        "Your session is confirmed — you will hear from the team shortly",
+  Identify:     "The Advisor is mapping the nature of your decision",
+  Stakes:       "The Advisor is assessing what is materially at stake",
+  Tension:      "The Advisor is surfacing the core tradeoff or tension",
+  Reflect:      "The Advisor is preparing a structural decision map",
+  Escalate:     "This decision has been escalated to a full Quorum session",
+  Booked:       "Your session is confirmed — the Quorum team will be in touch",
+  Disqualified: "This decision is outside Quorum's intended scope",
 };
 
 // ─── Sub-components (all accept C for theming) ────────────────────────────────
@@ -243,7 +256,7 @@ function DecisionSnapshot({ intel, started, C }) {
       {!started || !intel ? (
         <div style={{ paddingTop: 8 }}>
           <div style={{ fontSize: 11, color: C.textMuted, lineHeight: 1.7, marginBottom: 20 }}>
-            As you talk, Quorum builds a live picture of your decision — what is at stake, who is involved, and what is making it hard to resolve.
+            The Advisor will map your decision in real time — identifying what is at stake, what the core tension is, and whether it qualifies for a full Quorum session.
           </div>
           {STAGES.slice(0, 5).map((s, i) => (
             <div key={s.key} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
@@ -299,14 +312,14 @@ function DecisionSnapshot({ intel, started, C }) {
 
           {intel.ESTIMATED_STAKES && intel.ESTIMATED_STAKES !== "Unknown" && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "13px 14px", boxShadow: C.shadow }}>
-              <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>What Quorum Sees</div>
+              <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Stakes Assessment</div>
               <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.6 }}>{STAKES_USER[intel.ESTIMATED_STAKES] || intel.ESTIMATED_STAKES}</div>
             </div>
           )}
 
           {showCouncil && (
             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "13px 14px", boxShadow: C.shadow }}>
-              <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Perspectives Quorum Will Bring In</div>
+              <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Full Session — How It Works</div>
               <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.65 }}>{COUNCIL_DESCRIPTION}</div>
             </div>
           )}
@@ -376,12 +389,13 @@ function MobileProgressTracker({ intel, C }) {
 
 function IntelPanel({ intel, C }) {
   const stageMap = {
-    Discovery:     { color: "#7c8fff", bg: "rgba(124,143,255,0.12)" },
-    Qualification: { color: "#b06fff", bg: "rgba(176,111,255,0.12)" },
-    Assessment:    { color: "#ff8fff", bg: "rgba(255,143,255,0.10)" },
-    Insight:       { color: C.warn,    bg: C.warnGlow               },
-    Invite:        { color: C.accentLight, bg: C.accentGlow         },
-    Booked:        { color: C.success, bg: C.successGlow            },
+    Identify:     { color: "#7c8fff", bg: "rgba(124,143,255,0.12)" },
+    Stakes:       { color: "#b06fff", bg: "rgba(176,111,255,0.12)" },
+    Tension:      { color: "#ff8fff", bg: "rgba(255,143,255,0.10)" },
+    Reflect:      { color: C.warn,    bg: C.warnGlow               },
+    Escalate:     { color: C.accentLight, bg: C.accentGlow         },
+    Booked:       { color: C.success, bg: C.successGlow            },
+    Disqualified: { color: C.danger,  bg: "rgba(245,96,96,0.12)"   },
   };
   const stakesMap = {
     Low:      { color: C.textMuted, bg: C.border                    },
@@ -445,6 +459,16 @@ function IntelPanel({ intel, C }) {
       <div style={cardStyle}>
         <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 7 }}>Recommended Move</div>
         <div style={{ fontSize: 11.5, color: C.textMuted, lineHeight: 1.65 }}>{intel.RECOMMENDED_NEXT_MESSAGE || "—"}</div>
+      </div>
+
+      <div style={cardStyle}>
+        <div style={{ fontSize: 9, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 7 }}>Last Exchange Type</div>
+        <div style={{
+          display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: "0.05em",
+          background: intel.EXCHANGE_TYPE === "DECISION" ? C.accentGlow : C.border,
+          color:      intel.EXCHANGE_TYPE === "DECISION" ? C.accentLight : C.textMuted,
+        }}>{intel.EXCHANGE_TYPE || "—"}</div>
+        <div style={{ fontSize: 10, color: C.textDim, marginTop: 6 }}>Only DECISION exchanges count toward the 3–5 target</div>
       </div>
 
       <div style={cardStyle}>
@@ -691,7 +715,8 @@ export default function QuorumSDR() {
   const [history,   setHistory]   = useState([]);
   const [started,   setStarted]   = useState(false);
   const [qualified,    setQualified]    = useState(false);
-  const [userExchanges, setUserExchanges] = useState(0);   // counts prospect messages (not the Hello)
+  const [userExchanges, setUserExchanges] = useState(0);   // counts all prospect messages (not the Hello)
+  const [decisionExchanges, setDecisionExchanges] = useState(0); // counts only decision-relevant exchanges
   const [showBooking,   setShowBooking]   = useState(false);
   const [bookingDone,   setBookingDone]   = useState(false);
   const [isMobile,      setIsMobile]      = useState(false);
@@ -778,14 +803,14 @@ export default function QuorumSDR() {
   };
 
   // ── API call ───────────────────────────────────────────────────────────────
-  const callAPI = async (msgs, exchangeCount = 0) => {
+  const callAPI = async (msgs, decisionExCount = 0) => {
     let systemContent = SYSTEM_PROMPT;
-    if (exchangeCount === 4) {
-      systemContent += "\n\nNote: You are at exchange 4 of 6. If you have enough context, begin moving toward your insight observation now.";
-    } else if (exchangeCount === 5) {
-      systemContent += "\n\nNote: You are at exchange 5 of 6. Deliver your insight and extend the session invitation in this message.";
-    } else if (exchangeCount >= 6) {
-      systemContent += "\n\nNote: This is your final message. Confirm the booking or close warmly.";
+    if (decisionExCount === 2) {
+      systemContent += "\n\nNote: You have 2 decision-relevant exchanges so far. If you have identified a concrete decision, meaningful stakes, and at least one core tension, begin your decision map reflection now (Stage: Reflect).";
+    } else if (decisionExCount === 3) {
+      systemContent += "\n\nNote: You have 3 decision-relevant exchanges — at the lower end of the target range. If the decision, stakes, and core tension are clear, deliver the decision map reflection and escalate to booking. Only continue asking if critical context is genuinely missing.";
+    } else if (decisionExCount >= 4) {
+      systemContent += "\n\nNote: You are at or beyond the 3-5 exchange target. Deliver the decision map reflection and escalate to booking in this message. Do not ask further questions unless the decision itself is still unidentified.";
     }
     const res = await fetch("/api/chat", {
       method: "POST",
@@ -809,7 +834,8 @@ export default function QuorumSDR() {
         setQualified(true);
         writeLead(parsed, fullHistory);
       }
-      if (parsed.STAGE === "Invite" || parsed.STAGE === "Booked") {
+      // Escalate replaces Invite; Booked also triggers; Disqualified does not
+      if (parsed.STAGE === "Escalate" || parsed.STAGE === "Booked") {
         setShowBooking(true);
       }
     }
@@ -842,9 +868,14 @@ export default function QuorumSDR() {
     setLoading(true);
     const newHistory = [...history, { role: "user", content: text }];
     try {
-      const raw      = await callAPI(newHistory, nextExchanges);
+      const raw      = await callAPI(newHistory, decisionExchanges);
       const fullHist = [...newHistory, { role: "assistant", content: raw }];
       const visible  = processResponse(raw, fullHist);
+      // Only increment decisionExchanges if this exchange was decision-relevant
+      const parsed = parseInternal(raw);
+      if (parsed?.EXCHANGE_TYPE === "DECISION") {
+        setDecisionExchanges(p => p + 1);
+      }
       setHistory(fullHist);
       setMessages(p => [...p, { role: "assistant", text: visible }]);
     } catch { setMessages(p => [...p, { role: "assistant", text: "Something went wrong." }]); }
@@ -946,7 +977,7 @@ export default function QuorumSDR() {
                   Quorum Decision Advisor
                 </div>
                 <div style={{ fontSize: 13, color: C.textMuted, maxWidth: 320, lineHeight: 1.7, margin: "0 auto" }}>
-                  For anyone facing a decision that matters — personal or professional.
+                  A structured intake layer for decisions that carry real consequences. Not a coach. Not an AI assistant.
                 </div>
               </div>
               <button
