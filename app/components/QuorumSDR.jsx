@@ -740,6 +740,7 @@ export default function QuorumSDR() {
   const [showBooking,   setShowBooking]   = useState(false);
   const [bookingDone,   setBookingDone]   = useState(false);
   const [isMobile,      setIsMobile]      = useState(false);
+  const [visitCount,    setVisitCount]    = useState(null);   // total sessions logged, operator-only display
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -761,6 +762,27 @@ export default function QuorumSDR() {
       return s ? s.toLowerCase().trim() : "direct";
     } catch { return "direct"; }
   })());
+  
+  // ── Visit tracking — logs every page load, independent of qualification ───
+  // Lower bar than writeLead: fires whether or not the visitor ever sends a
+  // message, so it answers "did anyone land here?" rather than "did they finish?"
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res  = await fetch("/api/visits", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId.current, source: source.current }),
+        });
+        const data = await res.json();
+        if (!cancelled && typeof data.total === "number") setVisitCount(data.total);
+      } catch (e) {
+        console.error("Visit log failed:", e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // ── Operator mode ──────────────────────────────────────────────────────────
   const [isOperator, setIsOperator] = useState(() => {
@@ -1122,6 +1144,11 @@ export default function QuorumSDR() {
             }}>
               {isOperator ? "⚙  Operator View" : "Decision Snapshot"}
             </span>
+            {isOperator && visitCount !== null && (
+              <span style={{ fontSize: 9, fontWeight: 700, color: C.textMuted, letterSpacing: "0.04em" }}>
+                👁 {visitCount} visit{visitCount === 1 ? "" : "s"}
+              </span>
+            )}
           </div>
 
           {isOperator
